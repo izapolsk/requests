@@ -191,7 +191,7 @@ class SessionRedirectMixin(object):
 
             prepared_request.url = to_native_string(url)
 
-            self.rebuild_method(prepared_request, resp)
+            self.rebuild_method(prepared_request, resp, **adapter_kwargs)
 
             # https://github.com/psf/requests/issues/1084
             if resp.status_code not in (codes.temporary_redirect, codes.permanent_redirect):
@@ -311,11 +311,12 @@ class SessionRedirectMixin(object):
 
         return new_proxies
 
-    def rebuild_method(self, prepared_request, response):
+    def rebuild_method(self, prepared_request, response, **kwargs):
         """When being redirected we may want to change the method of the request
         based on certain specs or browser behavior.
         """
         method = prepared_request.method
+        preserve_method = kwargs.get('preserve_method', False)
 
         # https://tools.ietf.org/html/rfc7231#section-6.4.4
         if response.status_code == codes.see_other and method != 'HEAD':
@@ -323,7 +324,7 @@ class SessionRedirectMixin(object):
 
         # Do what the browsers do, despite standards...
         # First, turn 302s into GETs.
-        if response.status_code == codes.found and method != 'HEAD':
+        if response.status_code == codes.found and method != 'HEAD' and not preserve_method:
             method = 'GET'
 
         # Second, if a POST is responded to with a 301, turn it into a GET.
@@ -468,8 +469,8 @@ class Session(SessionRedirectMixin):
         return p
 
     def request(self, method, url,
-            params=None, data=None, headers=None, cookies=None, files=None,
-            auth=None, timeout=None, allow_redirects=True, proxies=None,
+            params=None, data=None, headers=None, cookies=None, files=None, auth=None,
+            timeout=None, allow_redirects=True, preserve_method=False, proxies=None,
             hooks=None, stream=None, verify=None, cert=None, json=None):
         """Constructs a :class:`Request <Request>`, prepares it and sends it.
         Returns :class:`Response <Response>` object.
@@ -496,6 +497,8 @@ class Session(SessionRedirectMixin):
         :type timeout: float or tuple
         :param allow_redirects: (optional) Set to True by default.
         :type allow_redirects: bool
+        :param preserve_method: (optional) Set to False by default.
+        :type preserve_method: bool
         :param proxies: (optional) Dictionary mapping protocol or protocol and
             hostname to the URL of the proxy.
         :param stream: (optional) whether to immediately download the response
@@ -537,6 +540,7 @@ class Session(SessionRedirectMixin):
         send_kwargs = {
             'timeout': timeout,
             'allow_redirects': allow_redirects,
+            'preserve_method': preserve_method
         }
         send_kwargs.update(settings)
         resp = self.send(prep, **send_kwargs)

@@ -37,6 +37,8 @@ def request(method, url, **kwargs):
     :type timeout: float or tuple
     :param allow_redirects: (optional) Boolean. Enable/disable GET/OPTIONS/POST/PUT/PATCH/DELETE/HEAD redirection. Defaults to ``True``.
     :type allow_redirects: bool
+    :param preserve_method: (optional) Preserve method during redirect. There're many servers which return f.e. 302 for POST requests and cause source request turn into GET.
+    :type preserve_method: bool
     :param proxies: (optional) Dictionary mapping protocol to the URL of the proxy.
     :param verify: (optional) Either a boolean, in which case it controls whether we verify
             the server's TLS certificate, or a string, in which case it must be a path
